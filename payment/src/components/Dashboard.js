@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { getAllPayments } from "./services/paymentService";
+import AccountDetails from "./AccountDetails";
+import PaymentHistory from "./PaymentHistory";
+import SendMoney from "./SendMoney";
 
 const Dashboard = () => {
   const [payments, setPayments] = useState([]);

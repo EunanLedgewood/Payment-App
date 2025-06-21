@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PaymentAPI.Data;
 using PaymentAPI.Models;
@@ -21,39 +16,11 @@ namespace PaymentAPI.Controllers
             _context = context;
         }
 
-        // GET: api/Payments
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Payment>>> GetDbSet()
-        {
-            if (_context.DbSet == null)
-            {
-                return NotFound();
-            }
-            return await _context.DbSet.ToListAsync();
-        }
-
-        // GET: api/Payments/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Payment>> GetPayment(int id)
-        {
-            if (_context.DbSet == null)
-            {
-                return NotFound();
-            }
-            var payment = await _context.DbSet.FindAsync(id);
-
-            if (payment == null)
-            {
-                return NotFound();
-            }
-
-            return payment;
-        }
-
-        [HttpGet]
+        // GET: api/Payments/user
+        [HttpGet("user")]
         public async Task<ActionResult<IEnumerable<Payment>>> GetPaymentsByUserId(
-    [FromQuery] string userId,
-    [FromQuery] int? fromYear)
+            [FromQuery] string userId,
+            [FromQuery] int? fromYear)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -76,76 +43,109 @@ namespace PaymentAPI.Controllers
             return Ok(payments);
         }
 
-
-        // PUT: api/Payments/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutPayment(int id, Payment payment)
+        // POST: api/Payments/send
+        [HttpPost("send")]
+        public async Task<ActionResult<Payment>> SendPayment(SendPaymentRequest request)
         {
-            if (id != payment.Id)
+            // Validate sender exists
+            var sender = await _context.Users.FirstOrDefaultAsync(u => u.AccountId == request.SenderAccountId);
+            if (sender == null)
             {
-                return BadRequest();
+                return BadRequest("Sender account not found");
             }
 
-            _context.Entry(payment).State = EntityState.Modified;
-
-            try
+            // Validate receiver exists
+            var receiver = await _context.Users.FirstOrDefaultAsync(u => u.AccountId == request.ReceiverAccountId);
+            if (receiver == null)
             {
-                await _context.SaveChangesAsync();
+                return BadRequest("Receiver account not found");
             }
-            catch (DbUpdateConcurrencyException)
+
+            // Check if sender has sufficient balance
+            if (sender.Balance < request.Amount)
             {
-                if (!PaymentExists(id))
+                return BadRequest("Insufficient balance");
+            }
+
+            // Create payment record
+            var payment = new Payment
+            {
+                Amount = request.Amount,
+                Payer = sender.AccountId,
+                Receiver = receiver.AccountId,
+                Date = DateTime.UtcNow,
+                PaymentMethod = "Transfer"
+            };
+
+            // Update balances
+            sender.Balance -= request.Amount;
+            receiver.Balance += request.Amount;
+
+            // Save everything in a transaction
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
                 {
-                    return NotFound();
+                    _context.Payments.Add(payment);
+                    _context.Users.Update(sender);
+                    _context.Users.Update(receiver);
+                    
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(payment);
                 }
-                else
+                catch (Exception)
                 {
-                    throw;
+                    await transaction.RollbackAsync();
+                    return StatusCode(500, "Payment failed");
                 }
             }
-
-            return NoContent();
         }
 
-        // POST: api/Payments
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Payment>> PostPayment(Payment payment)
+        // GET: api/Payments
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Payment>>> GetAllPayments()
         {
-            if (_context.DbSet == null)
-            {
-                return Problem("Entity set 'PaymentDbContext.DbSet'  is null.");
-            }
-            _context.DbSet.Add(payment);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetPayment", new { id = payment.Id }, payment);
+            return await _context.Payments.OrderByDescending(p => p.Date).ToListAsync();
         }
 
-        // DELETE: api/Payments/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePayment(int id)
+        // GET: api/Payments/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Payment>> GetPayment(int id)
         {
-            if (_context.DbSet == null)
-            {
-                return NotFound();
-            }
-            var payment = await _context.DbSet.FindAsync(id);
+            var payment = await _context.Payments.FindAsync(id);
+
             if (payment == null)
             {
                 return NotFound();
             }
 
-            _context.DbSet.Remove(payment);
+            return payment;
+        }
+
+        // DELETE: api/Payments/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletePayment(int id)
+        {
+            var payment = await _context.Payments.FindAsync(id);
+            if (payment == null)
+            {
+                return NotFound();
+            }
+
+            _context.Payments.Remove(payment);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
+    }
 
-        private bool PaymentExists(int id)
-        {
-            return (_context.DbSet?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
+    // DTOs
+    public class SendPaymentRequest
+    {
+        public string SenderAccountId { get; set; }
+        public string ReceiverAccountId { get; set; }
+        public decimal Amount { get; set; }
     }
 }
