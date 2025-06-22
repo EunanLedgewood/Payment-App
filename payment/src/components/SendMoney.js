@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { sendPayment } from "../services/paymentService";
 
-const SendMoney = ({ user }) => {
+const SendMoney = ({ user, onBalanceUpdate }) => {
   const [formData, setFormData] = useState({
     receiverAccountId: "",
     amount: ""
@@ -32,6 +32,7 @@ const SendMoney = ({ user }) => {
         setMessage({ text: "Account not found", type: "error" });
       }
     } catch (error) {
+      console.error("Lookup error:", error);
       setReceiverInfo(null);
       setMessage({ text: "Error looking up account", type: "error" });
     }
@@ -64,23 +65,28 @@ const SendMoney = ({ user }) => {
     setLoading(true);
 
     try {
-      await sendPayment({
+      const response = await sendPayment({
         senderAccountId: user.accountId,
         receiverAccountId: formData.receiverAccountId,
         amount: amount
       });
 
-      setMessage({ text: `Successfully sent $${amount.toFixed(2)} to ${receiverInfo.username}`, type: "success" });
+      console.log("Payment response:", response);
+
+      setMessage({ 
+        text: `Successfully sent $${amount.toFixed(2)} to ${receiverInfo.username}`, 
+        type: "success" 
+      });
       setFormData({ receiverAccountId: "", amount: "" });
       setReceiverInfo(null);
       
-      // Update user balance in parent component would be ideal here
-      // For now, we'll just show success message
-      setTimeout(() => {
-        window.location.reload(); // Simple way to refresh data
-      }, 2000);
+      // Update the user's balance in the parent component
+      if (onBalanceUpdate) {
+        onBalanceUpdate(user.balance - amount);
+      }
 
     } catch (error) {
+      console.error("Payment error:", error);
       setMessage({ text: error.message || "Payment failed", type: "error" });
     } finally {
       setLoading(false);

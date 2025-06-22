@@ -3,14 +3,22 @@ import AccountDetails from "./AccountDetails";
 import PaymentHistory from "./PaymentHistory";
 import SendMoney from "./SendMoney";
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = ({ user: initialUser, onLogout }) => {
   const [activeTab, setActiveTab] = useState("account");
+  const [user, setUser] = useState(initialUser);
 
   const tabs = [
     { id: "account", label: "Account" },
     { id: "payments", label: "Payments" },
     { id: "send", label: "Send Money" }
   ];
+
+  const handleBalanceUpdate = (newBalance) => {
+    setUser(prevUser => ({
+      ...prevUser,
+      balance: newBalance
+    }));
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -19,7 +27,7 @@ const Dashboard = ({ user, onLogout }) => {
       case "payments":
         return <PaymentHistory user={user} />;
       case "send":
-        return <SendMoney user={user} />;
+        return <SendMoney user={user} onBalanceUpdate={handleBalanceUpdate} />;
       default:
         return <AccountDetails user={user} />;
     }
@@ -44,6 +52,9 @@ const Dashboard = ({ user, onLogout }) => {
           <h1 style={{ margin: 0, color: "#333" }}>PaymentApp</h1>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
             <span style={{ color: "#666" }}>Welcome, {user.username}</span>
+            <span style={{ color: "#28a745", fontWeight: "bold" }}>
+              Balance: ${user.balance.toFixed(2)}
+            </span>
             <button
               onClick={onLogout}
               style={{

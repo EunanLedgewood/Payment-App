@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { getAllPayments } from "../services/paymentService";
 
 const PaymentHistory = ({ user }) => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadPayments();
@@ -18,12 +18,32 @@ const PaymentHistory = ({ user }) => {
     } else {
       setLoading(true);
     }
+    setError("");
 
     try {
-      const data = await getAllPayments(user.accountId, searchYear);
+      console.log("Loading payments for user:", user.accountId);
+      
+      const queryParams = new URLSearchParams({ userId: user.accountId });
+      if (searchYear) {
+        queryParams.append("fromYear", searchYear);
+      }
+
+      const response = await fetch(
+        `http://localhost:5159/api/payments/user?${queryParams}`
+      );
+
+      console.log("Payment response status:", response.status);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch payments: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Payment data received:", data);
       setPayments(data);
     } catch (error) {
       console.error("Failed to load payments:", error);
+      setError(error.message);
     } finally {
       if (isSearch) {
         setSearchLoading(false);
@@ -60,6 +80,19 @@ const PaymentHistory = ({ user }) => {
     return (
       <div style={{ textAlign: "center", padding: "50px" }}>
         <h2>Loading payment history...</h2>
+        <p>User Account ID: {user.accountId}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ textAlign: "center", padding: "50px" }}>
+        <h2 style={{ color: "red" }}>Error loading payments</h2>
+        <p>{error}</p>
+        <button onClick={() => loadPayments()} style={{ padding: "10px 20px" }}>
+          Retry
+        </button>
       </div>
     );
   }
@@ -78,7 +111,7 @@ const PaymentHistory = ({ user }) => {
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <input
             type="text"
-            placeholder="Enter year (e.g. 2024)"
+            placeholder="Enter year (e.g. 2025)"
             value={year}
             onChange={(e) => setYear(e.target.value)}
             style={{
@@ -134,6 +167,9 @@ const PaymentHistory = ({ user }) => {
           <h3 style={{ color: "#666", marginBottom: "10px" }}>No payments found</h3>
           <p style={{ color: "#999" }}>
             {year ? `No payments found for year ${year}` : "You haven't made any payments yet"}
+          </p>
+          <p style={{ color: "#999", fontSize: "12px" }}>
+            Account ID: {user.accountId}
           </p>
         </div>
       ) : (
