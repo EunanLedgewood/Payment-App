@@ -18,6 +18,26 @@ namespace PaymentAPI.Controllers
             _context = context;
         }
 
+        // GET: api/Users/all
+        [HttpGet("all")]
+        public async Task<ActionResult<IEnumerable<UserResponse>>> GetAllUsers()
+        {
+            var users = await _context.Users
+                .Where(u => u.IsActive)
+                .Select(u => new UserResponse
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    AccountId = u.AccountId,
+                    Balance = u.Balance,
+                    DateJoined = u.DateJoined
+                })
+                .ToListAsync();
+
+            return Ok(users);
+        }
+        
         // POST: api/Users/register
         [HttpPost("register")]
         public async Task<ActionResult<User>> Register(RegisterRequest request)

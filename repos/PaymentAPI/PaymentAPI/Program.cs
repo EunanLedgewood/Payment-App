@@ -15,14 +15,15 @@ namespace PaymentAPI
             // Add services to the container.
             builder.Services.AddControllers();
 
-            // Add CORS
+            // Add CORS - IMPORTANT: This must be before building the app
             builder.Services.AddCors(options =>
             {
-                options.AddDefaultPolicy(builder =>
+                options.AddDefaultPolicy(policy =>
                 {
-                    builder.WithOrigins("http://localhost:3000")
-                           .AllowAnyHeader()
-                           .AllowAnyMethod();
+                    policy.WithOrigins("http://localhost:3000")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
                 });
             });
 
@@ -41,7 +42,8 @@ namespace PaymentAPI
 
             app.UseHttpsRedirection();
 
-            // Enable CORS
+            //For future reference, this is how to enable CORS so I 
+            //can get my frontend to ping my backend
             app.UseCors();
 
             app.UseAuthorization();
