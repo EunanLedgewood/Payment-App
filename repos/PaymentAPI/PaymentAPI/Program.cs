@@ -12,42 +12,39 @@ namespace PaymentAPI
             builder.Services.AddDbContext<PaymentDbContext>(options => 
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Add services to the container.
             builder.Services.AddControllers();
 
-            // Add CORS - IMPORTANT: This must be before building the app
+            // Add CORS with more permissive settings for development
             builder.Services.AddCors(options =>
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000")
+                    policy.AllowAnyOrigin()
                           .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                          .AllowAnyMethod();
                 });
             });
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            // Just commenting this line out now so I can force 
+            // react to use HTTP only to try and solve CORS errors - This is supposed to be commented out during development
+            //If this app is deployed however, I need to uncomment it and potentially change the http to https in payment
+            // app.UseHttpsRedirection();
 
-            //For future reference, this is how to enable CORS so I 
-            //can get my frontend to ping my backend
+            // Enable CORS before authorization
             app.UseCors();
 
             app.UseAuthorization();
-
             app.MapControllers();
 
             app.Run();
