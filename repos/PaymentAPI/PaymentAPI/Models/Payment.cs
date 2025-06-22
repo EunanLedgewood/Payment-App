@@ -12,14 +12,14 @@ namespace PaymentAPI.Models
 
         [Required]
         [StringLength(100)]
-        public string Payer { get; set; }
+        public string Payer { get; set; } = string.Empty;
 
         [Required]
         [StringLength(100)]
-        public string Receiver { get; set; }
+        public string Receiver { get; set; } = string.Empty;
 
         [Required]
-        public DateTime Date { get; set; } = DateTime.UtcNow; // Changed from DateOfPayment to Date
+        public DateTime Date { get; set; } = DateTime.UtcNow;
 
         [Required]
         [StringLength(50)]

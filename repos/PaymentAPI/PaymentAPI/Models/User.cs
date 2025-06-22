@@ -8,18 +8,18 @@ namespace PaymentAPI.Models
         
         [Required]
         [StringLength(50)]
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
         
         [Required]
         [StringLength(100)]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
         
         [Required]
-        public string PasswordHash { get; set; }
+        public string PasswordHash { get; set; } = string.Empty;
         
         [Required]
         [StringLength(20)]
-        public string AccountId { get; set; } // This will be the public account ID for transfers
+        public string AccountId { get; set; } = string.Empty;
         
         [Required]
         [Range(0, double.MaxValue)]

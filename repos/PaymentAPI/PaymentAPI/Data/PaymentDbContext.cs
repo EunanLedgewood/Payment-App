@@ -7,8 +7,8 @@ namespace PaymentAPI.Data
     {
         public PaymentDbContext(DbContextOptions<PaymentDbContext> options) : base(options) { }
 
-        public DbSet<Payment> Payments { get; set; }
-        public DbSet<User> Users { get; set; }
+        public DbSet<Payment> Payments { get; set; } = null!;
+        public DbSet<User> Users { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

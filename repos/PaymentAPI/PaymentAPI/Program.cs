@@ -9,12 +9,23 @@ namespace PaymentAPI
         {
             var builder = WebApplication.CreateBuilder(args);
 
-
-            builder.Services.AddDbContext<PaymentDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddDbContext<PaymentDbContext>(options => 
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // Add services to the container.
-
             builder.Services.AddControllers();
+
+            // Add CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(builder =>
+                {
+                    builder.WithOrigins("http://localhost:3000")
+                           .AllowAnyHeader()
+                           .AllowAnyMethod();
+                });
+            });
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -30,8 +41,10 @@ namespace PaymentAPI
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            // Enable CORS
+            app.UseCors();
 
+            app.UseAuthorization();
 
             app.MapControllers();
 

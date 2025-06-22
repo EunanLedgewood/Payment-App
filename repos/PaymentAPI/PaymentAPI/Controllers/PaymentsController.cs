@@ -144,8 +144,8 @@ namespace PaymentAPI.Controllers
     // DTOs
     public class SendPaymentRequest
     {
-        public string SenderAccountId { get; set; }
-        public string ReceiverAccountId { get; set; }
+        public string SenderAccountId { get; set; } = string.Empty;
+        public string ReceiverAccountId { get; set; } = string.Empty;
         public decimal Amount { get; set; }
     }
 }
